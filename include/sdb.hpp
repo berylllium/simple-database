@@ -63,7 +63,7 @@ struct Database
             {
                 uint64_t string_address = *get_column_address<uint64_t>(i);
 
-                return reinterpret_cast<char*>(database->string_table[string_address]);
+                return reinterpret_cast<char*>(database->string_table.data() + string_address);
             }
             else
             {
@@ -94,13 +94,42 @@ struct Database
 
             for (size_t n = 0; n < i; n++)
             {
-                column_address += get_column_type_size(database->column_types[i]);
+                column_address += get_column_type_size(database->column_types[n]);
             }
 
             return reinterpret_cast<T*>(column_address);
         }
 
         friend Database;
+    };
+
+    struct Iterator 
+    {
+        using iterator_category = std::forward_iterator_tag;
+        using difference_type   = std::ptrdiff_t;
+        
+        Iterator(uint8_t* row_address, Database* database) : row_address(row_address), database(database) {}
+
+        RowView operator*() const { return RowView(row_address, database); }
+        RowView operator->() { return RowView(row_address, database); }
+
+        Iterator& operator ++ () { row_address += database->row_size; return *this; }
+
+        Iterator operator ++ (int) { Iterator tmp = *this; ++(*this); return tmp; }
+
+        friend bool operator== (const Iterator& a, const Iterator& b)
+        {
+            return (a.row_address == b.row_address) && (a.database == b.database);
+        }
+
+        friend bool operator!= (const Iterator& a, const Iterator& b)
+        {
+            return (a.row_address != b.row_address) || (a.database != b.database);
+        }
+        
+    private:
+        uint8_t* row_address;
+        Database* database;
     };
 
     uint16_t column_count; 
@@ -120,6 +149,10 @@ struct Database
     size_t get_metadata_size() const;
     size_t get_string_table_offset() const;
     size_t get_row_table_offset() const;
+
+    // Iterators.
+    Iterator begin();
+    Iterator end();
 
 private:
     size_t row_size = 0;

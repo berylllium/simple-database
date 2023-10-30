@@ -133,6 +133,16 @@ size_t Database::get_row_table_offset() const
     return get_metadata_size() + string_table.size();
 }
 
+Database::Iterator Database::begin()
+{
+    return Iterator(row_table.data(), this);
+}
+
+Database::Iterator Database::end()
+{
+    return Iterator(row_table.data() + row_table.size(), this);
+}
+
 size_t Database::add_string(std::string s)
 {
     size_t new_string_address = string_table.size();

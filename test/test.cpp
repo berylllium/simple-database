@@ -25,12 +25,17 @@ int main()
 
     db2.write_to_file("test2.sdb");
 
-    // Test 2: String columns.
+    // Test 2: String columns & iterators.
     sdb::Database db3({ sdb::DatabaseColumnType::UI32, sdb::DatabaseColumnType::String });
 
     db3.create_row().set_column(0, 2).set_column(1, std::string("Hello there :)"));
     db3.create_row().set_column(0, 3).set_column(1, std::string("This is another row."));
     db3.create_row().set_column(0, 4).set_column(1, std::string("This is a longer string, and also another row."));
+
+    for (sdb::Database::RowView row : db3)
+    {
+        std::cout << row.get_column<std::string>(1);
+    }
 
     db3.write_to_file("test3.sdb");
 
