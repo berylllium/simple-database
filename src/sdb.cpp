@@ -87,9 +87,7 @@ Database::RowView Database::create_row()
     // Allocate enough memory for new row.
     row_table.resize(row_table.size() + row_size);
 
-    RowView row_view;
-
-    populate_row_view(row_view, new_row_address);
+    RowView row_view(row_table.data() + new_row_address, this);
 
     return std::move(row_view);
 }
@@ -133,21 +131,6 @@ size_t Database::get_string_table_offset() const
 size_t Database::get_row_table_offset() const
 {
     return get_metadata_size() + string_table.size();
-}
-
-void Database::populate_row_view(RowView& row_view, size_t row_table_address)
-{
-    row_view.columns = std::make_unique<uint8_t*[]>(column_count);
-
-    size_t offset = 0;
-
-    for (size_t i = 0; i < column_count; i++)
-    {
-        row_view.columns[i] = reinterpret_cast<uint8_t*>(row_table.data() + row_table_address + offset);
-        offset += get_column_type_size(column_types[i]);
-    }
-
-    row_view.database = this;
 }
 
 size_t Database::add_string(std::string s)

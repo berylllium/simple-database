@@ -44,11 +44,11 @@ struct Database
                 // Increase string table memory.
                 size_t string_address = database->add_string(v);
 
-                *reinterpret_cast<uint64_t*>(columns[i]) = string_address;
+                *get_column_address<uint64_t>(i) = string_address;
             }
             else
             {
-                *reinterpret_cast<T*>(columns[i]) = v;
+                *get_column_address<T>(i) = v;
             }
 
             return *this;
@@ -61,13 +61,13 @@ struct Database
             // https://open-std.org/JTC1/SC22/WG21/docs/cwg_defects.html#727
             if constexpr (std::is_same_v<T, std::string>)
             {
-                uint64_t string_address = *reinterpret_cast<uint64_t*>(columns[i]);
+                uint64_t string_address = *get_column_address<uint64_t>(i);
 
                 return reinterpret_cast<char*>(database->string_table[string_address]);
             }
             else
             {
-                return *reinterpret_cast<T*>(columns[i]);
+                return *get_column_address<T>(i);
             }
         }
 
@@ -81,11 +81,24 @@ struct Database
 //        }
 
     private:
-        std::unique_ptr<uint8_t*[]> columns;
+        uint8_t* row_address;
 
         Database* database;
 
-        RowView() {}
+        RowView(uint8_t* row_address, Database* database) : row_address(row_address), database(database) {}
+
+        template<typename T>
+        T* get_column_address(size_t i) const
+        {
+            uint8_t* column_address = row_address;
+
+            for (size_t n = 0; n < i; n++)
+            {
+                column_address += get_column_type_size(database->column_types[i]);
+            }
+
+            return reinterpret_cast<T*>(column_address);
+        }
 
         friend Database;
     };
@@ -110,8 +123,6 @@ struct Database
 
 private:
     size_t row_size = 0;
-
-    void populate_row_view(RowView& row_view, size_t row_table_address);
 
     size_t add_string(std::string s);
 
