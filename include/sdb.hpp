@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <fstream>
+#include <cstring>
 #include <string>
 #include <vector>
 #include <memory>
@@ -36,6 +37,24 @@ struct Database
     struct RowView
     {
         template<typename T>
+        RowView& set_column(size_t i, const T& v)
+        {
+            if constexpr (std::is_same_v<T, std::string>)
+            {
+                // Increase string table memory.
+                size_t string_address = database->add_string(v);
+
+                *reinterpret_cast<uint64_t*>(columns[i]) = string_address;
+            }
+            else
+            {
+                *reinterpret_cast<T*>(columns[i]) = v;
+            }
+
+            return *this;
+        }
+
+        template<typename T>
         T get_column(size_t i) const
         {
             // Workaround until GCC fixes the explicit template specialization bug.
@@ -46,8 +65,10 @@ struct Database
 
                 return reinterpret_cast<char*>(database->string_table[string_address]);
             }
-
-            return *reinterpret_cast<T*>(columns[i]);
+            else
+            {
+                return *reinterpret_cast<T*>(columns[i]);
+            }
         }
 
 //        // Postpone this until GCC fixes this stupid bug...
@@ -91,6 +112,8 @@ private:
     size_t row_size = 0;
 
     void populate_row_view(RowView& row_view, size_t row_table_address);
+
+    size_t add_string(std::string s);
 
     static size_t get_column_type_size(DatabaseColumnType type);
 };

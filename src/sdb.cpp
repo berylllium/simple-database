@@ -1,7 +1,5 @@
 #include "sdb.hpp"
 
-#include <cstring>
-
 namespace sdb
 {
 
@@ -145,11 +143,24 @@ void Database::populate_row_view(RowView& row_view, size_t row_table_address)
 
     for (size_t i = 0; i < column_count; i++)
     {
-        row_view.columns[i] = reinterpret_cast<uint8_t*>(row_table.data() + row_table_address * offset);
+        row_view.columns[i] = reinterpret_cast<uint8_t*>(row_table.data() + row_table_address + offset);
         offset += get_column_type_size(column_types[i]);
     }
 
     row_view.database = this;
+}
+
+size_t Database::add_string(std::string s)
+{
+    size_t new_string_address = string_table.size();
+
+    // Allocate new memory for string.
+    string_table.resize(string_table.size() + s.size() + 1);
+
+    // Write string to string table.
+    std::memcpy(string_table.data() + new_string_address, s.data(), s.size() + 1);
+
+    return new_string_address;
 }
 
 size_t Database::get_column_type_size(DatabaseColumnType type)
