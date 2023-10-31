@@ -6,6 +6,37 @@ simple-database (abbreviated SDB) is a simple database library that strives to b
 
 The database format allows for blazingly quick iteration and searching through database rows.
 
+## Basic Usage
+Storing data:
+```cpp
+// Student ID, Student Name, Student Email
+sdb::Database db({ sdb::DatabaseColumnType::UI32, sdb::DatabaseColumnType::String, sdb::DatabaseColumnType::String });
+    
+db.create_row().set_column(0, 1234).set_column(1, std::string("John Doe")).set_column(2, std::string("johndoe@school.nl"));
+db.create_row().set_column(0, 5678).set_column(1, std::string("Simon Adams")).set_column(2, std::string("simonadams@school.nl"));
+    
+db.write_to_file("my_database.sdb");
+```
+
+Loading & Iterating database:
+```cpp
+sdb::Database db("my_database.sdb");
+
+for (sdb::Database::RowView row : db)
+{
+    std::cout << row.get_column<uint32_t>(0);
+    std::cout << row.get_column<std::string>(1);
+}
+```
+
+Searching database:
+```cpp
+sdb::Database db("my_database.sdb");
+
+// Get all rows where the first column is equal to 1234.
+std::vector<sdb::Database::RowView> results = db.search_match(0, 1234);
+```
+
 ## File format
 SDB uses a simple binary format to store databases as files. Each file consists of only one database table. Each database file is split into three sections; metadata, string table and row table. More information on individual sections will be discussed later.
 
@@ -59,5 +90,7 @@ The column types consist of N single byte integers, N being the column count, al
 The string table size is an 8 byte integer representing the total size of the string table section in bytes. This value is used to calculate the beginning of the row table section.
 
 ### String table
-The string table section starts directly after the metadata section. The string table is not a table, it's a section of memory where all the strings are stored directly after eachother. The strings are seperated from eachother using null-terminator bytes.
+The string table section starts directly after the metadata section and grows downward. The string table is not a table, it's more like a tightly packed array of character arrays. The strings are seperated from eachother using null-terminator bytes.
 
+### Row table
+The row table section starts directly after the string table section and grows downward. The row table section is always a multiple of the row size in bytes in size.
