@@ -29,12 +29,17 @@ for (sdb::Database::RowView row : db)
 }
 ```
 
-Searching database:
+Querying database:
 ```cpp
 sdb::Database db("my_database.sdb");
 
 // Get all rows where the first column is equal to 1234.
-std::vector<sdb::Database::RowView> results = db.search_match(0, 1234);
+sdb::Database::Query query = db.query().where(0, 1234);
+
+for (RowView row : query.selection)
+{
+    row.do_someting();
+}
 ```
 
 ## File format

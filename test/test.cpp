@@ -39,5 +39,20 @@ int main()
 
     db3.write_to_file("test3.sdb");
 
+    // Test 3: Query database.
+
+    sdb::Database db4({ sdb::DatabaseColumnType::UI32, sdb::DatabaseColumnType::String});
+
+    db4.create_row().set_column(0, 1234).set_column(1, std::string("This string belongs to 1234."));
+    db4.create_row().set_column(0, 5678).set_column(1, std::string("This one to 5678."));
+    db4.create_row().set_column(0, 1234).set_column(1, std::string("Another 1234."));
+
+    sdb::Database::Query q = db4.query().where(0, 1234);
+
+    for (auto row : q.selection)
+    {
+        std::cout << row.get_column<std::string>(1);
+    }
+
 	return 0;
 }

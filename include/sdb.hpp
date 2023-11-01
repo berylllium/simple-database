@@ -103,6 +103,32 @@ struct Database
         friend Database;
     };
 
+    struct Query
+    {
+        std::vector<RowView> selection;
+
+        template<typename T>
+        Query& where(size_t i, T v)
+        {
+            for (auto row : *db)
+            {
+                if (row.get_column<T>(i) == v)
+                {
+                    selection.push_back(row);
+                }
+            }
+
+            return *this;
+        }
+
+    private:
+        Query(Database* db) : db(db) {}
+
+        Database* db;
+
+        friend Database;
+    };
+
     struct Iterator 
     {
         using iterator_category = std::forward_iterator_tag;
@@ -143,6 +169,8 @@ struct Database
     Database(std::string file_name);
 
     RowView create_row();
+
+    Query query();
 
     void write_to_file(std::string file_name) const;
 

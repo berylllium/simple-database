@@ -92,6 +92,11 @@ Database::RowView Database::create_row()
     return std::move(row_view);
 }
 
+Database::Query Database::query()
+{
+    return Query(this);
+}
+
 void Database::write_to_file(std::string file_name) const
 {
     // Open file.
