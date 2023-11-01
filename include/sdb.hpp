@@ -22,6 +22,8 @@ public:
 
 enum class DatabaseColumnType
 {
+    Bool,
+    
     UI8, I8,
     UI16, I16,
     UI32, I32,

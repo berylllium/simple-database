@@ -165,6 +165,7 @@ size_t Database::get_column_type_size(DatabaseColumnType type)
 {
     switch (type)
     {
+    case DatabaseColumnType::Bool:
     case DatabaseColumnType::UI8:
     case DatabaseColumnType::I8:
         return 1;

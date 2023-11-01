@@ -80,17 +80,18 @@ The column types consist of N single byte integers, N being the column count, al
 
 | Type Number | Type Name | Long Name                                     | Byte Size |
 |------------:|-----------|-----------------------------------------------|----------:|
-|          00 | UI8       | Unsigned 8-bit Integer                        |         1 |
-|          01 | I8        | Signed 8-bit Integer                          |         1 |
-|          02 | UI16      | Unsigned 16-bit Integer                       |         2 |
-|          03 | I16       | Signed 16-bit Integer                         |         2 |
-|          04 | UI32      | Unsigned 32-bit Integer                       |         4 |
-|          05 | I32       | Signed 32-bit Integer                         |         4 |
-|          06 | UI64      | Unsigned 64-bit Integer                       |         8 |
-|          07 | I64       | Signed 64-bit Integer                         |         8 |
-|          08 | F32       | 32-bit Single Precision Floating Point Number |         4 |
-|          09 | F64       | 64-bit Double Precision Floating Point Number |         8 |
-|          0A | String    | An array of unlimited count of character.     |         8 |
+|          00 | Bool      | Boolean                                       |         1 |
+|          01 | UI8       | Unsigned 8-bit Integer                        |         1 |
+|          02 | I8        | Signed 8-bit Integer                          |         1 |
+|          03 | UI16      | Unsigned 16-bit Integer                       |         2 |
+|          04 | I16       | Signed 16-bit Integer                         |         2 |
+|          05 | UI32      | Unsigned 32-bit Integer                       |         4 |
+|          06 | I32       | Signed 32-bit Integer                         |         4 |
+|          07 | UI64      | Unsigned 64-bit Integer                       |         8 |
+|          08 | I64       | Signed 64-bit Integer                         |         8 |
+|          09 | F32       | 32-bit Single Precision Floating Point Number |         4 |
+|          0A | F64       | 64-bit Double Precision Floating Point Number |         8 |
+|          0B | String    | An array of unlimited count of character.     |         8 |
 
 The string table size is an 8 byte integer representing the total size of the string table section in bytes. This value is used to calculate the beginning of the row table section.
 
