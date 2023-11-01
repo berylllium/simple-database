@@ -123,6 +123,20 @@ struct Database
             return *this;
         }
 
+        template<typename T>
+        Query& with(size_t i, T v)
+        {
+            for (size_t iter = 0; iter < selection.size(); iter++)
+            {
+                if (selection[iter].get_column<T>(i) != v)
+                {
+                    selection.erase(selection.begin() + iter);
+                }
+            }
+
+            return *this;
+        }
+
     private:
         Query(Database* db) : db(db) {}
 

@@ -41,17 +41,18 @@ int main()
 
     // Test 3: Query database.
 
-    sdb::Database db4({ sdb::DatabaseColumnType::UI32, sdb::DatabaseColumnType::String});
+    sdb::Database db4({ sdb::DatabaseColumnType::UI32, sdb::DatabaseColumnType::Bool, sdb::DatabaseColumnType::String});
 
-    db4.create_row().set_column(0, 1234).set_column(1, std::string("This string belongs to 1234."));
-    db4.create_row().set_column(0, 5678).set_column(1, std::string("This one to 5678."));
-    db4.create_row().set_column(0, 1234).set_column(1, std::string("Another 1234."));
+    db4.create_row().set_column(0, 1234).set_column(1, true).set_column(2, std::string("This string belongs to 1234."));
+    db4.create_row().set_column(0, 5678).set_column(1, false).set_column(2, std::string("This one to 5678."));
+    db4.create_row().set_column(0, 1234).set_column(1, false).set_column(2, std::string("Another 1234."));
+    db4.create_row().set_column(0, 1234).set_column(1, true).set_column(2, std::string("Another (accepted) 1234."));
 
-    sdb::Database::Query q = db4.query().where(0, 1234);
+    sdb::Database::Query q = db4.query().where(0, 1234).with(1, true);
 
     for (auto row : q.selection)
     {
-        std::cout << row.get_column<std::string>(1);
+        std::cout << row.get_column<std::string>(2);
     }
 
 	return 0;
