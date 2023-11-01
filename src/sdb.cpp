@@ -89,6 +89,20 @@ Database::RowView Database::create_row()
 
     RowView row_view(row_table.data() + new_row_address, this);
 
+    // Set default values.
+    for (size_t i = 0; i < column_count; i++)
+    {
+        switch (column_types[i])
+        {
+        case DatabaseColumnType::String:
+        {
+            row_view.set_column<uint64_t>(i, UINT64_MAX);
+        } break;
+        default:
+            break;
+        }
+    }
+
     return std::move(row_view);
 }
 
@@ -150,15 +164,132 @@ Database::Iterator Database::end()
 
 size_t Database::add_string(std::string s)
 {
-    size_t new_string_address = string_table.size();
+    // Calculate neccessary chunks to store string.
+    size_t string_size = s.size() + 1; // Null-terminator.
+    size_t needed_chunks = string_size / string_chunk_size;
+    if (string_size % string_chunk_size > 0) needed_chunks++;
 
-    // Allocate new memory for string.
-    string_table.resize(string_table.size() + s.size() + 1);
+    // Return if no chunks are required.
+    if (needed_chunks == 0) return 0;
 
-    // Write string to string table.
-    std::memcpy(string_table.data() + new_string_address, s.data(), s.size() + 1);
+    // Reserve chunks.
+    size_t satisfied_chunks = 0;
+    std::unique_ptr<uint64_t[]> reserved_chunk_offsets = std::make_unique<uint64_t[]>(needed_chunks);
 
-    return new_string_address;
+    // Find empty existing chunks.
+    size_t actual_string_chunk_size = (string_chunk_size + sizeof(uint64_t));
+
+    for (size_t current_chunk = 0; current_chunk < (string_table.size() / actual_string_chunk_size); current_chunk++)
+    {
+        size_t current_chunk_offset = current_chunk * actual_string_chunk_size;
+
+        if (*reinterpret_cast<uint64_t*>(string_table.data() + current_chunk_offset + string_chunk_size) == UINT64_MAX)
+        {
+            // Empty chunk found.
+            reserved_chunk_offsets[satisfied_chunks] = current_chunk_offset;
+
+            satisfied_chunks++;
+        }
+
+        if (satisfied_chunks == needed_chunks) break;
+    }
+
+    // Allocate enough memory for the unsatisfied chunks.
+    size_t unsatisfied_chunks = needed_chunks - satisfied_chunks;
+
+    if (unsatisfied_chunks > 0)
+    {
+        size_t first_allocated_chunk_offset = string_table.size();
+
+        string_table.resize(string_table.size() + unsatisfied_chunks * actual_string_chunk_size);
+
+        for (size_t i = 0; i < unsatisfied_chunks; i++)
+        {
+            reserved_chunk_offsets[satisfied_chunks + i] = first_allocated_chunk_offset + i * actual_string_chunk_size;
+        }
+    }
+
+    // Populate chunks.
+    for (size_t i = 0; i < needed_chunks; i++)
+    {
+        // Setup pointers.
+        if (i < (needed_chunks - 1))
+        {
+            // Point the current chunk to the next chunk if this isn't the last chunk.
+            *reinterpret_cast<uint64_t*>(string_table.data() + reserved_chunk_offsets[i] + string_chunk_size) =
+                reserved_chunk_offsets[i + 1];
+        }
+        else
+        {
+            // Set pointer to point to the first chunk if this is the last chunk.
+            *reinterpret_cast<uint64_t*>(string_table.data() + reserved_chunk_offsets[i] + string_chunk_size) =
+                reserved_chunk_offsets[0];
+        }
+
+        // Populate chunk.
+        // Calculate how many strings to copy. The last chunk can contain less than string_chunk_size characters.
+        size_t copy_size = string_chunk_size;
+        if (i == (needed_chunks - 1))
+        {
+            // Last chunk.
+            if (string_size % string_chunk_size > 0)
+            {
+                copy_size = string_size % string_chunk_size;
+            }
+        }
+
+        // Copy over characters from the string.
+        std::memcpy(
+            string_table.data() + reserved_chunk_offsets[i],
+            s.data() + i * string_chunk_size,
+            copy_size);
+        
+    }
+
+    return reserved_chunk_offsets[0];
+}
+
+std::string Database::get_string(size_t offset) const
+{
+    std::string s;
+
+    size_t first_offset = offset;
+    size_t next_offset = UINT64_MAX;
+
+    while (next_offset != first_offset)
+    {
+        next_offset = *reinterpret_cast<const uint64_t*>(string_table.data() + offset + string_chunk_size);
+
+        if (next_offset == first_offset)
+        {
+            // Last chunk.
+            s += std::string(reinterpret_cast<const char*>(string_table.data() + offset));
+        }
+        else
+        {
+            // Full chunk is string.
+            s += std::string(reinterpret_cast<const char*>(string_table.data() + offset), string_chunk_size);
+        }
+
+        offset = next_offset;
+    }
+
+    return s;
+}
+
+void Database::remove_string(size_t offset)
+{
+    size_t first_offset = offset;
+    size_t next_offset = UINT64_MAX;
+
+    while (next_offset != first_offset)
+    {
+        next_offset = *reinterpret_cast<uint64_t*>(string_table.data() + offset + string_chunk_size);
+
+        *reinterpret_cast<uint64_t*>(string_table.data() + offset + string_chunk_size) = UINT64_MAX;
+
+        offset = next_offset;
+    }
 }
 
 size_t Database::get_column_type_size(DatabaseColumnType type)

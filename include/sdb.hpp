@@ -43,10 +43,16 @@ struct Database
         {
             if constexpr (std::is_same_v<T, std::string>)
             {
-                // Increase string table memory.
-                size_t string_address = database->add_string(v);
+                // Check if there already is a string.
+                uint64_t current_offset = get_column<uint64_t>(i);
 
-                *get_column_address<uint64_t>(i) = string_address;
+                // Remove old string if exists.
+                if (current_offset != UINT64_MAX) database->remove_string(current_offset);
+
+                // Add new string.
+                uint64_t new_offset = database->add_string(v);
+
+                *get_column_address<uint64_t>(i) = new_offset;
             }
             else
             {
@@ -63,9 +69,9 @@ struct Database
             // https://open-std.org/JTC1/SC22/WG21/docs/cwg_defects.html#727
             if constexpr (std::is_same_v<T, std::string>)
             {
-                uint64_t string_address = *get_column_address<uint64_t>(i);
+                uint64_t string_offset = *get_column_address<uint64_t>(i);
 
-                return reinterpret_cast<char*>(database->string_table.data() + string_address);
+                return database->get_string(string_offset);
             }
             else
             {
@@ -201,7 +207,13 @@ struct Database
 private:
     size_t row_size = 0;
 
+    const size_t string_chunk_size = 32;
+
+    // String management.
     size_t add_string(std::string s);
+    std::string get_string(size_t offset) const;
+
+    void remove_string(size_t offset);
 
     static size_t get_column_type_size(DatabaseColumnType type);
 };

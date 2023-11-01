@@ -26,6 +26,8 @@ int main()
     db2.write_to_file("test2.sdb");
 
     // Test 2: String columns & iterators.
+    std::cout << "Test 2:\n\n";
+
     sdb::Database db3({ sdb::DatabaseColumnType::UI32, sdb::DatabaseColumnType::String });
 
     db3.create_row().set_column(0, 2).set_column(1, std::string("Hello there :)"));
@@ -34,12 +36,13 @@ int main()
 
     for (sdb::Database::RowView row : db3)
     {
-        std::cout << row.get_column<std::string>(1);
+        std::cout << row.get_column<std::string>(1) << '\n';
     }
 
     db3.write_to_file("test3.sdb");
 
     // Test 3: Query database.
+    std::cout << "Test 3:\n\n";
 
     sdb::Database db4({ sdb::DatabaseColumnType::UI32, sdb::DatabaseColumnType::Bool, sdb::DatabaseColumnType::String});
 
@@ -52,8 +55,22 @@ int main()
 
     for (auto row : q.selection)
     {
-        std::cout << row.get_column<std::string>(2);
+        std::cout << row.get_column<std::string>(2) << '\n';
     }
+
+    // Test 4: Query database.
+    std::cout << "Test 4:\n\n";
+
+    sdb::Database db5({ sdb::DatabaseColumnType::UI32, sdb::DatabaseColumnType::String});
+
+    db5.create_row().set_column(0, 1)
+        .set_column(1, std::string("This is the first iteration of this string."))
+        .set_column(1, std::string("This is the next."))
+        .set_column(1, std::string("And this is the last."));
+
+    std::cout << db5.query().where(0, 1).selection[0].get_column<std::string>(1);
+    
+    db5.write_to_file("test5.sdb");
 
 	return 0;
 }
