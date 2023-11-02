@@ -89,16 +89,16 @@ struct Database
 //        }
 
     private:
-        uint8_t* row_address;
+        size_t row_offset;
 
         Database* database;
 
-        RowView(uint8_t* row_address, Database* database) : row_address(row_address), database(database) {}
+        RowView(size_t row_offset, Database* database) : row_offset(row_offset), database(database) {}
 
         template<typename T>
         T* get_column_address(size_t i) const
         {
-            uint8_t* column_address = row_address;
+            uint8_t* column_address = database->row_table.data() + row_offset;
 
             for (size_t n = 0; n < i; n++)
             {
@@ -143,6 +143,8 @@ struct Database
             return *this;
         }
 
+        void remove_selection();
+
     private:
         Query(Database* db) : db(db) {}
 
@@ -156,27 +158,27 @@ struct Database
         using iterator_category = std::forward_iterator_tag;
         using difference_type   = std::ptrdiff_t;
         
-        Iterator(uint8_t* row_address, Database* database) : row_address(row_address), database(database) {}
+        Iterator(size_t row_offset, Database* database) : row_offset(row_offset), database(database) {}
 
-        RowView operator*() const { return RowView(row_address, database); }
-        RowView operator->() { return RowView(row_address, database); }
+        RowView operator*() const { return RowView(row_offset, database); }
+        RowView operator->() { return RowView(row_offset, database); }
 
-        Iterator& operator ++ () { row_address += database->row_size; return *this; }
+        Iterator& operator ++ () { row_offset += database->row_size; return *this; }
 
         Iterator operator ++ (int) { Iterator tmp = *this; ++(*this); return tmp; }
 
         friend bool operator== (const Iterator& a, const Iterator& b)
         {
-            return (a.row_address == b.row_address) && (a.database == b.database);
+            return (a.row_offset == b.row_offset) && (a.database == b.database);
         }
 
         friend bool operator!= (const Iterator& a, const Iterator& b)
         {
-            return (a.row_address != b.row_address) || (a.database != b.database);
+            return (a.row_offset != b.row_offset) || (a.database != b.database);
         }
         
     private:
-        uint8_t* row_address;
+        size_t row_offset;
         Database* database;
     };
 

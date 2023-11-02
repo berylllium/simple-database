@@ -44,7 +44,7 @@ int main()
     // Test 3: Query database.
     std::cout << "Test 3:\n\n";
 
-    sdb::Database db4({ sdb::DatabaseColumnType::UI32, sdb::DatabaseColumnType::Bool, sdb::DatabaseColumnType::String});
+    sdb::Database db4({ sdb::DatabaseColumnType::UI32, sdb::DatabaseColumnType::Bool, sdb::DatabaseColumnType::String });
 
     db4.create_row().set_column(0, 1234).set_column(1, true).set_column(2, std::string("This string belongs to 1234."));
     db4.create_row().set_column(0, 5678).set_column(1, false).set_column(2, std::string("This one to 5678."));
@@ -61,7 +61,7 @@ int main()
     // Test 4: Query database.
     std::cout << "Test 4:\n\n";
 
-    sdb::Database db5({ sdb::DatabaseColumnType::UI32, sdb::DatabaseColumnType::String});
+    sdb::Database db5({ sdb::DatabaseColumnType::UI32, sdb::DatabaseColumnType::String });
 
     db5.create_row().set_column(0, 1)
         .set_column(1, std::string("This is the first iteration of this string."))
@@ -71,6 +71,34 @@ int main()
     std::cout << db5.query().where(0, 1).selection[0].get_column<std::string>(1);
     
     db5.write_to_file("test5.sdb");
+
+    // Test 5: String columns & iterators.
+    std::cout << "Test 2:\n\n";
+
+    sdb::Database db6({ sdb::DatabaseColumnType::UI32, sdb::DatabaseColumnType::String });
+
+    db6.create_row().set_column(0, 2).set_column(1, std::string("Hello there :)"));
+    db6.create_row().set_column(0, 1).set_column(1, std::string("This is another row."));
+    db6.create_row().set_column(0, 1).set_column(1, std::string("This is a longer string, and also another row."));
+    db6.create_row().set_column(0, 5).set_column(1, std::string("This is a string..."));
+
+    for (sdb::Database::RowView row : db6)
+    {
+        std::cout << row.get_column<std::string>(1) << '\n';
+    }
+
+    std::cout << "\n --- Post deletion\n\n";
+
+    sdb::Database::Query q2 = db6.query().where(0, 1);
+
+    q2.remove_selection();
+
+    for (sdb::Database::RowView row : db6)
+    {
+        std::cout << row.get_column<std::string>(1) << '\n';
+    }
+
+    db6.write_to_file("test5.sdb");
 
 	return 0;
 }

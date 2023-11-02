@@ -1,7 +1,36 @@
 #include "sdb.hpp"
 
+#include <algorithm>
+
 namespace sdb
 {
+
+void Database::Query::remove_selection()
+{
+    // Remove selection from highest, to lowest offset.
+    // Copy offsets to temporary vector.
+    std::vector<uint64_t> offsets;
+    offsets.reserve(selection.size());
+    
+    for (RowView& row : selection)
+    {
+        offsets.push_back(row.row_offset);
+    }
+    
+    // Sort offsets from greatest to lowest.
+    std::sort(offsets.begin(), offsets.end(), std::greater<uint64_t>());
+
+    // Remove rows, starting with higher offsets.
+    for (uint64_t offset : offsets)
+    {
+        db->row_table.erase(
+            db->row_table.begin() + offset,
+            db->row_table.begin() + offset + db->row_size);
+    }
+
+    // Shrink row table.
+    db->row_table.shrink_to_fit();
+}
 
 Database::Database(std::initializer_list<DatabaseColumnType> column_types)
 {
@@ -82,12 +111,12 @@ Database::Database(std::string file_name)
 
 Database::RowView Database::create_row()
 {
-    size_t new_row_address = row_table.size();
+    size_t new_row_offset = row_table.size();
 
     // Allocate enough memory for new row.
     row_table.resize(row_table.size() + row_size);
 
-    RowView row_view(row_table.data() + new_row_address, this);
+    RowView row_view(new_row_offset, this);
 
     // Set default values.
     for (size_t i = 0; i < column_count; i++)
@@ -154,12 +183,12 @@ size_t Database::get_row_table_offset() const
 
 Database::Iterator Database::begin()
 {
-    return Iterator(row_table.data(), this);
+    return Iterator(0, this);
 }
 
 Database::Iterator Database::end()
 {
-    return Iterator(row_table.data() + row_table.size(), this);
+    return Iterator(row_table.size(), this);
 }
 
 size_t Database::add_string(std::string s)
